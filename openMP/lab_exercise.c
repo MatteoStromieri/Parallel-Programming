@@ -38,135 +38,43 @@
 #include <omp.h>
 
 
-#define THRESHOLD 2000
-
-int    more_data_arriving( int );
-int    getting_data( int, int * );
-double heavy_work( int );
+#define N_DFLT 1000
 
 
 int main ( int argc, char **argv )
 {
 
-  srand48(time(NULL));
-  int data_are_arriving,data_amount,n,i; 
-  setenv("OMP_DYNAMIC", "true", 1);
+  int N = ( (argc > 1) ? atoi(*(argv+1)) : N_DFLT);
+
+  int *array = (int*)malloc( sizeof(int) * N );
   
-  // get the number of threads
-  n = argc > 1 ? atoi(argv[1]) : omp_get_max_threads();
-  // define the array of data
-  int* data = (int*)malloc(sizeof(int)*n);
-// start n threads
-  i = 0;
- printf("Initializing %d threads...\n",n); 
-#pragma omp parallel num_threads(n)
-  {
-    int my_rank = omp_get_thread_num();
-    printf("Thread #%d has been initialized...\n",my_rank);
-
-    while( data_are_arriving )       // data_are_arriving should be
-				     // an int whose value is known
-				     // to everybody
-      {
-
-        
-	// you must account for how many
-        // iteration have been done in
-	// this loop
-	
-	// [1] here somebody receives
-	//     the data (and how many
-	//     they are).
-	//     Assume that the number
-	//     of data are in the range
-	//     [1..Nthreads]
-	//     "data" is an array of
-	//     integers that is generated
-	//     by getting_data()
-	
-	#pragma omp single
-	      {
-	      	data_amount=getting_data(n,data); 
-		printf("%d data have arrived\n",data_amount);
-	      }
-
-	// [2] threads process the data
-	//     so that each thread process
-	//     one.
-	//     "processing" means to call
-	//     the function heavy_work()
-	//     using as argument an entry
-	//     of the int array generated
-	//     by getting_data() at step [1]
-	//
-	//     All the data must be processed
-	//     before getting to the next
-	//     iteration
-	
-        // check if the my rank is < data_amount	      
-	if (my_rank < data_amount){
-		heavy_work(data[my_rank]);
-		printf("%d: work executed\n",my_rank);
-	}
-
-	// [3] somebody get whether new
-	//     data will be arriving by
-	//     calling more_data_arriving().
-	//     The argument of more_data_arriving()
-	//     is the iteration number
-
-	#pragma omp single
-	{
-		i += 1;
-		data_are_arriving = more_data_arriving(i);
-	}
-      }
+  for(int i = 0; i < N; i++){
+  	array[i]=-1;
+	printf("%d ", array[i]);
   }
-  printf("No more data\n");
+
+  #pragma omp parallel firstprivate(array)
+  {
+
+    int myid = omp_get_thread_num();
+    int nthreads = omp_get_num_threads();
+    int myrange = (N/nthreads) + (myid < N%nthreads);
+    
+    array += myrange*myid;
+    if(myid >= N%nthreads)
+	    array += N%nthreads;
+
+    for ( int i = 0; i < myrange; i++ )
+      array[i] = myid;
+  }
+
+  printf("\n");
+
+  for(int i = 0; i < N; i++){
+	printf("%d ", array[i]);
+  }
+
+  printf("\n");
+
   return 0;
-}
-
-
-int more_data_arriving( int i )
-{
-  // it is increasingly probable that
-  // no more data arrive when i approaches
-  // THRESHOLD
-  //
-  double p = (double)(THRESHOLD - i) / THRESHOLD;
-  return (drand48() < p);
-}
-
-
-int getting_data( int n, int *data )
-{
- #define MIN  1000
- #define MAX 10000
-  
-  // produces no more than n-1
-  // data
-  int howmany = lrand48() % n;
-  howmany = ( howmany == 0 ? 1 : howmany);
-
-  // be sure that the data
-  // array has enough room
-  // to host up to n-1 data
-  for( int j = 0; j < howmany; j++ )
-    data[j] = 1024 + lrand48() % (MAX-MIN);  // values will range
-				             // from MIN up to MAX
-  
-  return howmany;
-}
-
-double heavy_work( int N )
-{
-  double guess = 3.141572 / 3 * N;
-
-  for( int i = 0; i < N; i++ )
-    {
-      guess = exp( guess );
-      guess = sin( guess );
-
-    }
-  return guess;
 }
