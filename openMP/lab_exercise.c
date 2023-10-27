@@ -38,13 +38,24 @@
 #include <omp.h>
 
 
-#define N_DFLT 1000
+#define N_DFLT 100
+#define NTHREADS_DFLT 15
 
-
+/*
+ * I expect to receive two inputs
+ * 1) the length of the array 
+ * 2) the number of threads
+ * */
 int main ( int argc, char **argv )
 {
+	
+	omp_set_dynamic(0);
 
+	// length of the array
 	int N = ( (argc > 1) ? atoi(*(argv+1)) : N_DFLT);
+
+	// number of threads to spawn
+	int nthreads = ( (argc > 2) ? atoi(*(argv+2)) :  NTHREADS_DFLT);
 
 	int *array = (int*)malloc( sizeof(int) * N );
 	      
@@ -53,11 +64,11 @@ int main ( int argc, char **argv )
 		printf("%d ", array[i]);
 					  }
 
+	omp_set_num_threads(nthreads);
 	#pragma omp parallel firstprivate(array)
 	{
 		
 		int myid = omp_get_thread_num();
-		int nthreads = omp_get_num_threads();
 		int myrange = (N/nthreads) + (myid < N%nthreads);
 				        
 		array += myrange*myid;
