@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2015 - 2016 Master in High Performance Computing
- *
- * Adapted from the net by  Giuseppe Brandino. 
- * Last modified by Alberto Sartori. 
- * Added time and promoted to long long all important variables
- * Some more modification by S.Cozzini (nov 2021)
- */
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
