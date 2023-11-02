@@ -18,6 +18,7 @@ int main(int argc, char** argv){
 	// we want to store both the starting point of each partition and the highest value of each partition
 	int** startingPoints;
 	int* highestValue;
+	int nThreads;
 	int* lastInt = array + length - 1;
 
 	for(int i = 0; i < length; i++){
@@ -31,7 +32,7 @@ int main(int argc, char** argv){
 	# pragma omp parallel 
 	{
 		int myId = omp_get_thread_num();
-		int nThreads = omp_get_num_threads();
+		nThreads = omp_get_num_threads();
 		int myLength = length / nThreads + ((myId < length % nThreads) ? 1:0);
 		int* myStart = array + myLength*myId + ((myId >= length % nThreads) ? length % nThreads : 0);
 		
@@ -40,6 +41,7 @@ int main(int argc, char** argv){
 		{
 			startingPoints = (int**) malloc(nThreads * sizeof(int*));
 			highestValue = (int*) malloc(nThreads * sizeof(int));
+			// remainingLength = (int*) malloc(nThreads * sizeof(int));
 		}
 
 		// store the starting point of the interval
@@ -52,17 +54,14 @@ int main(int argc, char** argv){
 		// store the highest value in the interval 
 		highestValue[myId] = myStart[myLength-1];
 
-		// wait for all the threads to write the array
-		#pragma omp barrier
-		
-		// now we can compute the partial sums
-		for(int i = 1; i < nThreads; i++){
-			#pragma omp for 
-			for(int* j = startingPoints[i]; j <= lastInt; j++){
-				*j = *j + highestValue[i-1];
-			}	
-		}
 	} // implicit barrier synchronization
+
+	for(int i = 0; i < nThreads; i++){
+		#pragma omp parallel for 
+		for(int* j = startingPoints[i]; j <= lastInt; j++){
+			*j = *j + highestValue[i-1];
+		}
+	}
 
 	// print the array
 	for(int i=0; i < length; i++)
