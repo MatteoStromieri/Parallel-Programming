@@ -59,11 +59,11 @@ int main(int argc,char* argv[]){
 
 		unsigned long long int sum=0;
 		
-		for(int i=0;i<world_size-1;i++){
+		for(int i=0;i<world_size;i++){
 			sum+=(unsigned long long int)rcvbuf[i];
 		}
 		free(rcvbuf);
-		long double pi = (long double)4.0 * (long double)sum/iterations;
+		long double pi = 4.0 * (long double)sum/iterations;
 		printf("Computed PI = %Lf \n",pi);
 	}
 
